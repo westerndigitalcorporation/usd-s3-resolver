@@ -10,19 +10,24 @@ set(CMAKE_CXX_STANDARD 11)
 
 # TODO: Windows support.
 add_compile_options(-Wall -DBUILD_OPTLEVEL_OPT -DBUILD_COMPONENT_SRC_PREFIX="")
-option(ENABLE_RESOLVER_BUILD "Enabling building the uri resolver." On)
+option(BUILD_MYSQL_RESOLVER "Build the MySQL URI resolver")
 
-set(EXTERNAL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external)
+if (BUILD_MYSQL_RESOLVER)
+    set(EXTERNAL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external)
 
-set(Z85_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/z85/z85_impl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/z85/z85.c)
+    set(Z85_SRC
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/z85/z85_impl.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/z85/z85.c)
 
-if (ENABLE_RESOLVER_BUILD)
+    add_subdirectory(external)
     add_subdirectory(URIResolver)
 endif ()
 
-add_subdirectory(external)
+option(BUILD_S3_RESOLVER "Build the S3 URI resolver" On)
+
+if (BUILD_S3_RESOLVER)
+    add_subdirectory(S3Resolver)
+endif()
 
 install(
     FILES plugInfo.json
