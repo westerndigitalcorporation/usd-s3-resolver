@@ -9,13 +9,15 @@ A generic, URI based resolver for USD, support custom plugins.
 ## Features
 
 ### Current
-* URIResolver - custom resolver for USD.
+* MySQLResolver - custom resolver for USD assets in a MySQL database.
+* S3Resolver - custom asset resolver for USD assets in an S3 object store.
 * usd_sql::SQL - MySQL database access.
+* usd_s3::S3 - S3 object store access.
 * obfuscate_pass - A simple tool to convert passwords to a z85 encoded string. WARNING !!! This is not for encrypting your password, but to hide it from artists in an environment. It is extremely simple to "decrypt" and offers no protection.
 
 ### Planned
 * Create a plugin registry for extending URIResolver.
-* Move the SQL accessor to a spearete plugin and load it dynamically.
+* Move the SQL accessor to a separate plugin and load it dynamically.
 * Windows support.
 * Simplify the build process.
 

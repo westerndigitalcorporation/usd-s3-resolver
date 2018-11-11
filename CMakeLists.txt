@@ -20,7 +20,7 @@ if (BUILD_MYSQL_RESOLVER)
         ${CMAKE_CURRENT_SOURCE_DIR}/external/z85/z85.c)
 
     add_subdirectory(external)
-    add_subdirectory(URIResolver)
+    add_subdirectory(MySQLResolver)
 endif ()
 
 option(BUILD_S3_RESOLVER "Build the S3 URI resolver" On)
