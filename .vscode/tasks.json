@@ -6,6 +6,7 @@
         "cwd": "${workspaceRoot}/build",
         "env": {
             "USD_ROOT": "${workspaceRoot}/../build",
+            "BOOST_ROOT": "${workspaceRoot}/../build",
             "TBBROOT": "${workspaceRoot}/../build",
             "LIBRARY_PATH":  "${workspaceRoot}/../build/lib",
             //"MYSQL_ROOT": "${workspaceRoot}/../build/usr/local/mysql",
@@ -16,20 +17,14 @@
             "label": "cmake static",
             "type": "shell",
             "command": "rm -rf ./*  && cmake -G 'Unix Makefiles' -DMYSQL_USE_STATIC_LIB=ON ..",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "build",
             "problemMatcher": []
         },
         {
             "label": "cmake dynamic",
             "type": "shell",
             "command": "rm -rf ./*  && cmake -G 'Unix Makefiles' ..",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "build",
             "problemMatcher": []
         },
         {
@@ -44,11 +39,18 @@
             },
             "type": "shell",
             "command": "rm -rf ./*  && cmake -G 'Unix Makefiles' ..",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "build the project",
+            "type": "shell",
+            "command": "make -j8",
             "group": {
-                "kind": "build",
-                "isDefault": true
+                "isDefault": true,
+                "kind": "build"
             },
             "problemMatcher": []
-        }
+        },
     ]
 }
