@@ -12,10 +12,10 @@ find_path(USD_LIBRARY_DIR libusd.so
           PATHS ${USD_ROOT}/lib
           DOC "USD Libraries directory")
 
-find_file(USD_GENSCHEMA
-          names usdGenSchema
-          PATHS ${USD_ROOT}/bin
-          DOC "USD Gen schema application")
+# find_file(USD_GENSCHEMA
+#           names usdGenSchema
+#           PATHS ${USD_ROOT}/bin
+#           DOC "USD Gen schema application")
 
 if(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
     foreach(_usd_comp MAJOR MINOR PATCH)
@@ -35,6 +35,6 @@ find_package_handle_standard_args(
     REQUIRED_VARS
     USD_INCLUDE_DIR
     USD_LIBRARY_DIR
-    USD_GENSCHEMA
+    # USD_GENSCHEMA
     VERSION_VAR
     USD_VERSION)
