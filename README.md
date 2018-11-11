@@ -34,17 +34,36 @@ You'll need the following libraries to build the project; newer versions most li
 | MySQL Connector C | 6.1.9+         |
 | CMAKE             | 2.8+           |
 
+### MySQL
 You can download the MySql library [here](https://dev.mysql.com/downloads/connector/c/).
 
-There are two main ways to configure a library location. 1, configure an environment variable. 2, pass the location of the library using -D\<varname\>=\<path\> to cmake. This will be simplified soon, once we add proper find modules.
+* Enable the cmake option BUILD_MYSQL_RESOLVER
+
+### S3
+Get the [AWS sdk for C++](https://github.com/aws/aws-sdk-cpp) as follows
+```
+git clone https://github.com/aws/aws-sdk-cpp
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_ONLY="s3" ../aws-sdk-cpp/
+make && sudo make install
+```
+
+* Enable the cmake option BUILD_S3_RESOLVER
+
+### URIResolver
+There are two main ways to configure a library location. 
+1, configure an environment variable. 
+2, pass the location of the library using -D\<varname\>=\<path\> to cmake. This will be simplified soon, once we add proper find modules.
 
 * Point the USD\_ROOT environment variable to the location of the installed USD.
 * Point the MYSQL\_CONNECTOR\_ROOT variable to the location of the extracted MySql connector C library.
 * Pass OPENEXR\_LOCATION to the CMake command or setup the OPENEXR\_LOCATION environment variable. They have to point at a standard build of OpenEXR, including IlmBase.
-* Point TBB\_ROOT\_DIR}, TBB\_INSTALL\_DIR or TBBROOT at your local TBB installation.
+* Point TBB\_ROOT\_DIR}, TBB\_INSTALL\_DIR or TBBROOT at your local TBB installation. 
+
+See also vscode tasks for some pointers.
 
 ## Contributing
 TODO.
 
-## Using the SQL resolver.
-Consult the README.md installed alongside the URIResolver.
+## Using the resolver.
+Consult the README.md installed alongside the resolvers.
