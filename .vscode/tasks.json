@@ -31,6 +31,7 @@
 
             // a single USD asset you've uploaded to an S3 bucket
             "USD_ASSET_SINGLE": "s3://hello/kitchen.usdz",
+            "USD_ASSET_SINGLE_LOCAL": "/home/stefaan/usd/kitchen.usdz",
 
             // a local copy of the kitchen set, with all payloads pointing to S3 objects
             "USD_ASSET_MULTI": "/home/stefaan/Pictures/usd/kitchen/Kitchen_set.usd"
@@ -120,7 +121,31 @@
         {
             "label": "direct fetch from S3 and reload forced",
             "type": "shell",
-            "command": "python -c 'from pxr import Usd, UsdGeom; stage = Usd.Stage.Open(\"s3:hello/kitchen.usdz\"); stage.Reload(True)'",
+            "command": "python -c 'from pxr import Usd, UsdGeom; stage = Usd.Stage.Open(\"s3:hello/kitchen.usdz\"); stage.Unload(); stage.Reload()'",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "direct fetch from S3 and reload after 5s",
+            "type": "shell",
+            "command": "python -c 'from pxr import Usd, UsdGeom; stage = Usd.Stage.Open(\"s3:hello/kitchen.usdz\"); import time; time.sleep(5); stage.Reload()'",
+            "group": "test",
+            "problemMatcher": []
+        },
+        {
+            "label": "re-upload kitchen",
+            "type": "shell",
+            "command": "../../venv/bin/aws s3 cp ${USD_ASSET_SINGLE_LOCAL} ${USD_ASSET_SINGLE} --endpoint-url http://${USD_S3_PROXY_HOST}",
+            "group": "test",
+            "problemMatcher": []
+        },
+        {
+            "label": "direct fetch from S3 and reload forced2",
+            "type": "shell",
+            "dependsOn": ["direct fetch from S3 and reload after 5s", "re-upload kitchen"],
             "group": {
                 "kind": "test",
                 "isDefault": true
