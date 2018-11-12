@@ -164,6 +164,12 @@ namespace usd_s3 {
 
     std::map<std::string, Cache> cached_requests;
 
+    // Determine a local path for an asset
+    std::string generate_path(const std::string& path) {
+        const std::string local_dir = get_env_var(CACHE_PATH_ENV_VAR, "/tmp");
+        return TfNormPath(local_dir + "/" + get_bucket_name(path) + "/" + get_object_name(path));
+    }
+
     // Resolve an asset with an S3 HEAD request and store the result in the cache
     std::string check_object(const std::string& path, Cache& cache) {
         if (s3_client == nullptr) {
@@ -191,31 +197,11 @@ namespace usd_s3 {
         if (head_object_outcome.IsSuccess())
         {
             // TODO set local_dir in S3 constructor
-            const std::string local_dir = get_env_var(CACHE_PATH_ENV_VAR, "/tmp");
-            const std::string local_path = TfNormPath(local_path + "/" + bucket_name.c_str() + "/" + object_name.c_str());
             double date_modified = head_object_outcome.GetResult().GetLastModified().SecondsWithMSPrecision();
             TF_DEBUG(S3_DBG).Msg("S3: check_object OK %.0f\n", date_modified);
             // check
-            if (TfPathExists(local_path)) {
-                double local_date_modified;
-                if (ArchGetModificationTime(local_path.c_str(), &local_date_modified)) {
-                    if (local_date_modified > date_modified) {
-                        TF_DEBUG(S3_DBG).Msg("S3: check_asset - no changes, reuse local cache %.0f > %.0f\n",
-                                local_date_modified, date_modified);
-                        cache.state = CACHE_FETCHED;
-                    } else {
-                        TF_DEBUG(S3_DBG).Msg("S3: check_asset - outdated local cache %.0f < %.0f\n",
-                                local_date_modified, date_modified);
-                        cache.state = CACHE_NEEDS_FETCHING;
-                    }
-                } else {
-                    // it's unlikely that you can't stat local files
-                    cache.state = CACHE_NEEDS_FETCHING;
-                }
-            } else {
-                cache.state = CACHE_NEEDS_FETCHING;
-            }
-
+            std::string local_path = generate_path(path);
+            cache.state = CACHE_NEEDS_FETCHING;
             cache.timestamp = date_modified;
             cache.local_path = local_path;
             return local_path;
@@ -251,6 +237,18 @@ namespace usd_s3 {
             TF_DEBUG(S3_DBG).Msg("S3: fetch_object bucket: %s and object: %s\n", bucket_name.c_str(), object_name.c_str());
         }
 
+        // Only download the asset if there's no local copy or if the local copy is outdated
+        // The GET request returns a 304 (not modified).
+        const std::string local_path = cache.local_path;
+        if (TfPathExists(local_path)) {
+            double local_date_modified;
+            if (ArchGetModificationTime(local_path.c_str(), &local_date_modified)) {
+                TF_DEBUG(S3_DBG).Msg("S3: update_asset_info - found local asset\n");
+                cache.timestamp = local_date_modified;
+                object_request.WithIfModifiedSince(local_date_modified);
+            }
+        }
+
         auto get_object_outcome = s3_client->GetObject(object_request);
 
         if (get_object_outcome.IsSuccess())
@@ -266,19 +264,24 @@ namespace usd_s3 {
                     return false;
                 }
             }
-
-            // TODO: set the original datemodified on the asset
+            // TODO: restore the original datemodified on the asset
             Aws::OFStream local_file;
             local_file.open(cache.local_path, std::ios::out | std::ios::binary);
             local_file << get_object_outcome.GetResult().GetBody().rdbuf();
             cache.timestamp = get_object_outcome.GetResult().GetLastModified().SecondsWithMSPrecision();
+            TF_DEBUG(S3_DBG).Msg("S3: fetch_object OK %.0f\n", cache.timestamp);
             //TF_DEBUG(S3_DBG).Msg("S3: fetch_object version: %s\n", get_object_outcome.GetResult().GetVersionId().c_str());
             cache.state = CACHE_FETCHED;
-            TF_DEBUG(S3_DBG).Msg("S3: fetch_object OK %.0f\n", cache.timestamp);
             return true;
         }
         else
         {
+            if (get_object_outcome.GetError().GetResponseCode() == Aws::Http::HttpResponseCode::NOT_MODIFIED) {
+                //cache.timestamp = get_object_outcome.GetResult().GetLastModified().SecondsWithMSPrecision();
+                TF_DEBUG(S3_DBG).Msg("S3: fetch_object OK %.0f\n", cache.timestamp);
+                cache.state = CACHE_FETCHED;
+                return true;
+            }
             std::cout << "GetObject error: " <<
                 get_object_outcome.GetError().GetExceptionName() << " " <<
                 get_object_outcome.GetError().GetMessage() << std::endl;
@@ -318,18 +321,38 @@ namespace usd_s3 {
                 return cached_result->second.local_path;
             }
             TF_DEBUG(S3_DBG).Msg("S3: resolve_name - refresh cached result for %s\n", path.c_str());
-            return check_object(path, cached_result->second);
+            // TODO: this should just generate a local path
+            // return check_object(path, cached_result->second);
+            return cached_result->second.local_path;
         } else {
             Cache cache{
-                CACHE_MISSING,
-                ""
+                CACHE_NEEDS_FETCHING,
+                generate_path(path)
             };
             TF_DEBUG(S3_DBG).Msg("S3: resolve_name - no cache for %s\n", path.c_str());
-            std::string result = check_object(path, cache);
+            // std::string result = check_object(path, cache);
+            // TODO: this should just generate a local path
             cached_requests.insert(std::make_pair(path, cache));
-            return result;
+            return cache.local_path;
         }
+    }
 
+    // Update asset info for resolved assets
+    // If the asset needs fetching, nothing is done as the cache is updated during the fetch phase
+    // If the asset doesn't need fetching, use check_object for updates.
+    // Discover local assets
+    void S3::update_asset_info(const std::string& asset_path) {
+        const auto path = parse_path(asset_path);
+        const auto cached_result = cached_requests.find(path);
+        if (cached_result != cached_requests.end()) {
+            //
+            if (cached_result->second.state == CACHE_NEEDS_FETCHING) {
+
+                return;
+            }
+            TF_DEBUG(S3_DBG).Msg("S3: update_asset_info %s\n", path.c_str());
+            check_object(path, cached_result->second);
+        }
     }
 
     // Fetch an asset to a local path
@@ -345,25 +368,6 @@ namespace usd_s3 {
         const auto cached_result = cached_requests.find(path);
         if (cached_result == cached_requests.end()) {
             S3_WARN("[S3Resolver] %s was not resolved before fetching!", path.c_str());
-            return false;
-        }
-
-        if (cached_result->second.state != CACHE_NEEDS_FETCHING) {
-            // ensure cache state is up to date
-            // there is no guarantee that get_timestamp was called prior to fetch
-            // note that pinned assets don't get updates
-            Cache cache{CACHE_MISSING, ""};
-            check_object(path, cache);
-            if (cache.timestamp == INVALID_TIME) {
-                cached_result->second.state = CACHE_MISSING;
-            } else if (cache.timestamp > cached_result->second.timestamp) {
-                TF_DEBUG(S3_DBG).Msg("S3: fetch_asset - local path data is out of date\n");
-                cached_result->second.state = CACHE_NEEDS_FETCHING;
-            }
-        }
-
-        if (cached_result->second.state == CACHE_MISSING) {
-            TF_DEBUG(S3_DBG).Msg("S3: fetch_asset - asset not found, no fetch\n");
             return false;
         }
 
@@ -384,6 +388,7 @@ namespace usd_s3 {
         return path.compare(0, schema_length_short, usd_s3::S3_PREFIX_SHORT) == 0;
     }
 
+    // returns the timestamp of the local cached asset
     double S3::get_timestamp(const std::string& asset_path) {
         const auto path = parse_path(asset_path);
         if (s3_client == nullptr) {

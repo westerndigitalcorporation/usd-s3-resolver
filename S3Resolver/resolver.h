@@ -36,6 +36,12 @@ public:
         const std::string& path,
         const std::string& resolvedPath) override;
 
+    virtual void UpdateAssetInfo(
+        const std::string& identifier,
+        const std::string& filePath,
+        const std::string& fileVersion,
+        ArAssetInfo* assetInfo) override;
+
     virtual bool FetchToLocalResolvedPath(
         const std::string& path,
         const std::string& resolvedPath) override;

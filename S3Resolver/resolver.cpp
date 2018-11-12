@@ -101,6 +101,19 @@ VtValue S3Resolver::GetModificationTimestamp(
            ArDefaultResolver::GetModificationTimestamp(path, resolvedPath);
 }
 
+void S3Resolver::UpdateAssetInfo(
+    const std::string& identifier,
+    const std::string& filePath,
+    const std::string& fileVersion,
+    ArAssetInfo* assetInfo)
+{
+    if (g_s3.matches_schema(identifier)) {
+        TF_DEBUG(USD_S3_RESOLVER).Msg("S3Resolver UPDATE_ASSET_INFO %s to %s\n", identifier.c_str(), filePath.c_str());
+        g_s3.update_asset_info(identifier);
+    }
+    ArDefaultResolver::UpdateAssetInfo(identifier, filePath, fileVersion, assetInfo);
+}
+
 bool S3Resolver::FetchToLocalResolvedPath(const std::string& path, const std::string& resolvedPath)
 {
     if (g_s3.matches_schema(path)) {
