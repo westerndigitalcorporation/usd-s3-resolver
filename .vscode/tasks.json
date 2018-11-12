@@ -131,21 +131,20 @@
         {
             "label": "direct fetch from S3 and reload after 5s",
             "type": "shell",
-            "command": "python -c 'from pxr import Usd, UsdGeom; stage = Usd.Stage.Open(\"s3:hello/kitchen.usdz\"); import time; time.sleep(5); stage.Reload()'",
+            "command": "python -c 'from pxr import Usd, UsdGeom; stage = Usd.Stage.Open(\"s3:hello/kitchen.usdz\"); import time; time.sleep(10); print \"RELOAD\"; stage.Reload()'",
             "group": "test",
-            "problemMatcher": []
         },
         {
             "label": "re-upload kitchen",
             "type": "shell",
-            "command": "../../venv/bin/aws s3 cp ${USD_ASSET_SINGLE_LOCAL} ${USD_ASSET_SINGLE} --endpoint-url http://${USD_S3_PROXY_HOST}",
+            "command": "sleep 5; ../../venv/bin/aws s3 cp ${USD_ASSET_SINGLE_LOCAL} ${USD_ASSET_SINGLE} --endpoint-url http://${USD_S3_PROXY_HOST}",
             "group": "test",
             "problemMatcher": []
         },
         {
             "label": "direct fetch from S3 and reload forced2",
             "type": "shell",
-            "dependsOn": ["direct fetch from S3 and reload after 5s", "re-upload kitchen"],
+            "dependsOn": ["re-upload kitchen", "direct fetch from S3 and reload after 5s"],
             "group": {
                 "kind": "test",
                 "isDefault": true
