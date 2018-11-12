@@ -1,10 +1,16 @@
 # USD-URI-resolver
-A generic, URI based resolver for USD, support custom plugins.
+A generic, URI based resolver for USD, support custom plugins. This is a fork of https://github.com/LumaPictures/usd-uri-resolver with support for S3 object storage.
 
 ## Project Goals
 * Resolve custom URI based for USD files.
 * Provide a generic plugin registry to extend the resolver without modifying its source code.
 * Include example resolvers supporting database based files.
+
+### S3 specific
+* Highly available and scalable asset store
+* Versioning support
+* Uses only 1 request per fetch for optimal performance (MySQL uses 3 queries initially and 2 on reload)
+* Local cache reuse
 
 ## Features
 
@@ -51,14 +57,14 @@ make && sudo make install
 * Enable the cmake option BUILD_S3_RESOLVER
 
 ### URIResolver
-There are two main ways to configure a library location. 
-1, configure an environment variable. 
+There are two main ways to configure a library location.
+1, configure an environment variable.
 2, pass the location of the library using -D\<varname\>=\<path\> to cmake. This will be simplified soon, once we add proper find modules.
 
 * Point the USD\_ROOT environment variable to the location of the installed USD.
 * Point the MYSQL\_CONNECTOR\_ROOT variable to the location of the extracted MySql connector C library.
 * Pass OPENEXR\_LOCATION to the CMake command or setup the OPENEXR\_LOCATION environment variable. They have to point at a standard build of OpenEXR, including IlmBase.
-* Point TBB\_ROOT\_DIR}, TBB\_INSTALL\_DIR or TBBROOT at your local TBB installation. 
+* Point TBB\_ROOT\_DIR}, TBB\_INSTALL\_DIR or TBBROOT at your local TBB installation.
 
 See also vscode tasks for some pointers.
 
