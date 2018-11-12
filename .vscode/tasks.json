@@ -5,11 +5,36 @@
     "options": {
         "cwd": "${workspaceRoot}/build",
         "env": {
+
             "USD_ROOT": "${workspaceRoot}/../build",
             "BOOST_ROOT": "${workspaceRoot}/../build",
             "TBBROOT": "${workspaceRoot}/../build",
-            "LIBRARY_PATH":  "${workspaceRoot}/../build/lib",
+            "LIBRARY_PATH": "${workspaceRoot}/../build/lib",
+
             //"MYSQL_ROOT": "${workspaceRoot}/../build/usr/local/mysql",
+
+            // usd path
+            "PYTHONPATH": "${workspaceRoot}/../build/lib/python",
+            "USDBIN": "${workspaceRoot}/../build/bin",
+
+            // usd needs to find the S3 resolver plugin
+            // set this to the directory containing plugInfo.json
+            "PXR_PLUGINPATH_NAME": "${workspaceRoot}/S3Resolver",
+
+            // a list with interesting debug flags
+            "TF_DEBUG_OPTIONS": "AR_RESOLVER_INIT USD_S3_RESOLVER USD_S3_FILEFORMAT SDF_ASSET SDF_LAYER S3_DBG",
+            "TF_DEBUG": "USD_S3_RESOLVER USD_S3_FILEFORMAT S3_DBG",
+
+            // configure the S3 resolver to an ActiveScale system node
+            "USD_S3_PROXY_HOST": "10.249.66.142",
+            "USD_S3_PROXY_PORT": "80",
+
+            // a single USD asset you've uploaded to an S3 bucket
+            "USD_ASSET_SINGLE": "s3://hello/kitchen.usdz",
+
+            // a local copy of the kitchen set, with all payloads pointing to S3 objects
+            "USD_ASSET_MULTI": "/home/stefaan/Pictures/usd/kitchen/Kitchen_set.usd"
+
         },
     },
     "tasks": [
@@ -52,5 +77,76 @@
             },
             "problemMatcher": []
         },
+        {
+            "label": "build the USD project",
+            "options":{
+                "cwd": "${workspaceRoot}/../USD"
+            },
+            "type": "shell",
+            "command": "python build_scripts/build_usd.py ../build",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "direct fetch from S3 - no cache",
+            "type": "shell",
+            "command": "rm /tmp/hello -rf; $USDBIN/usdcat -l ${USD_ASSET_SINGLE}",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "direct fetch from S3 - with cache",
+            "type": "shell",
+            "command": "$USDBIN/usdcat -l ${USD_ASSET_SINGLE}",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "direct fetch from S3 and reload",
+            "type": "shell",
+            "command": "python -c 'from pxr import Usd, UsdGeom; stage = Usd.Stage.Open(\"s3:hello/kitchen.usdz\"); stage.Reload()'",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "direct fetch from S3 and reload forced",
+            "type": "shell",
+            "command": "python -c 'from pxr import Usd, UsdGeom; stage = Usd.Stage.Open(\"s3:hello/kitchen.usdz\"); stage.Reload(True)'",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "referenced fetch by payload from S3 - no cache",
+            "type": "shell",
+            "command": "rm /tmp/kitchen -rf; $USDBIN/usdcat -l --flatten ${USD_ASSET_MULTI}",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "referenced fetch by payload from S3 - with cache",
+            "type": "shell",
+            "command": "$USDBIN/usdcat -l --flatten ${USD_ASSET_MULTI}",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+
     ]
 }
