@@ -201,9 +201,12 @@ namespace usd_s3 {
             TF_DEBUG(S3_DBG).Msg("S3: check_object OK %.0f\n", date_modified);
             // check
             std::string local_path = generate_path(path);
-            cache.state = CACHE_NEEDS_FETCHING;
+            if (date_modified > cache.timestamp) {
+                cache.state = CACHE_NEEDS_FETCHING;
+            }
             cache.timestamp = date_modified;
             cache.local_path = local_path;
+
             return local_path;
         }
         else
@@ -243,7 +246,7 @@ namespace usd_s3 {
         if (TfPathExists(local_path)) {
             double local_date_modified;
             if (ArchGetModificationTime(local_path.c_str(), &local_date_modified)) {
-                TF_DEBUG(S3_DBG).Msg("S3: update_asset_info - found local asset\n");
+                TF_DEBUG(S3_DBG).Msg("S3: fetch_object - found local asset\n");
                 cache.timestamp = local_date_modified;
                 object_request.WithIfModifiedSince(local_date_modified);
             }
