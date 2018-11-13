@@ -9,8 +9,6 @@
 
 #include <string>
 
-#include "object.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // \class S3Resolver

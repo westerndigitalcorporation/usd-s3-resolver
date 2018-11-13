@@ -73,7 +73,8 @@ std::string S3Resolver::ResolveWithAssetInfo(
 
     // S3 assets have their own cache
     if (g_s3.matches_schema(path)) {
-        TF_DEBUG(USD_S3_RESOLVER).Msg("S3Resolver RESOLVE %s \n", path.c_str());
+        //TF_DEBUG(USD_S3_RESOLVER).Msg("S3Resolver RESOLVE %s\n", path.c_str());
+        //TF_DEBUG_TIMED_SCOPE(USD_S3_RESOLVER, "RESOLVE %s", path.c_str());
         return g_s3.resolve_name(path);
     }
     // handle other assets with the default cache
@@ -93,12 +94,11 @@ VtValue S3Resolver::GetModificationTimestamp(
     const std::string& resolvedPath)
 {
     if (g_s3.matches_schema(path)) {
-        TF_DEBUG(USD_S3_RESOLVER).Msg("S3Resolver TIMESTAMP %s \n", path.c_str());
+        //TF_DEBUG(USD_S3_RESOLVER).Msg("S3Resolver TIMESTAMP %s \n", path.c_str());
+        //TF_DEBUG_TIMED_SCOPE(USD_S3_RESOLVER, "TIMESTAMP %s", path.c_str());
+        return VtValue(g_s3.get_timestamp(path));
     }
-
-    return g_s3.matches_schema(path) ?
-           VtValue(g_s3.get_timestamp(path)) :
-           ArDefaultResolver::GetModificationTimestamp(path, resolvedPath);
+    return ArDefaultResolver::GetModificationTimestamp(path, resolvedPath);
 }
 
 void S3Resolver::UpdateAssetInfo(
@@ -108,7 +108,8 @@ void S3Resolver::UpdateAssetInfo(
     ArAssetInfo* assetInfo)
 {
     if (g_s3.matches_schema(identifier)) {
-        TF_DEBUG(USD_S3_RESOLVER).Msg("S3Resolver UPDATE_ASSET_INFO %s to %s\n", identifier.c_str(), filePath.c_str());
+        //TF_DEBUG(USD_S3_RESOLVER).Msg("S3Resolver UPDATE_ASSET_INFO %s to %s\n", identifier.c_str(), filePath.c_str());
+        //TF_DEBUG_TIMED_SCOPE(USD_S3_RESOLVER, "UPDATE_ASSET_INFO %s", identifier.c_str());
         g_s3.update_asset_info(identifier);
     }
     ArDefaultResolver::UpdateAssetInfo(identifier, filePath, fileVersion, assetInfo);
@@ -117,7 +118,8 @@ void S3Resolver::UpdateAssetInfo(
 bool S3Resolver::FetchToLocalResolvedPath(const std::string& path, const std::string& resolvedPath)
 {
     if (g_s3.matches_schema(path)) {
-        TF_DEBUG(USD_S3_RESOLVER).Msg("S3Resolver FETCH %s to %s\n", path.c_str(), resolvedPath.c_str());
+        //TF_DEBUG(USD_S3_RESOLVER).Msg("S3Resolver FETCH %s to %s\n", path.c_str(), resolvedPath.c_str());
+        TF_DEBUG_TIMED_SCOPE(USD_S3_RESOLVER, "FETCH %s", path.c_str());
         return g_s3.fetch_asset(path, resolvedPath);
     } else {
         return ArDefaultResolver::FetchToLocalResolvedPath(path, resolvedPath);

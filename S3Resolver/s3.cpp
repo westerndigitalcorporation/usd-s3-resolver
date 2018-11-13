@@ -114,15 +114,8 @@ namespace {
     // e.g. 'bucket/object.usd' returns an empty string
     //      'bucket/object.usd?versionId=abc123' returns abc123
     const std::string get_object_versionid(const std::string& path) {
-        const int i = path.find_first_of('?');
-        if (i < 0) {
-            return std::string();
-        }
-        const int j = path.find_first_of("versionId=", i);
-        if (j < 0) {
-            return std::string();
-        }
-        return path.substr(j + 10);
+        const int i = path.find_first_of("versionId=");
+        return (i != std::string::npos) ? path.substr(i + 10) : std::string();
     }
 
     // get an environment variable
@@ -160,6 +153,7 @@ namespace usd_s3 {
         std::string local_path;
         double timestamp;       // date last modified
         bool is_pinned;         // pinned (versioned) objects don't need to be checked for changes
+        std::string ETag;       // md5 hash
     };
 
     std::map<std::string, Cache> cached_requests;
@@ -170,7 +164,8 @@ namespace usd_s3 {
         return TfNormPath(local_dir + "/" + get_bucket_name(path) + "/" + get_object_name(path));
     }
 
-    // Resolve an asset with an S3 HEAD request and store the result in the cache
+    // Check / resolve an asset with an S3 HEAD request and store the result in the cache
+    // Set CACHE_NEEDS_FETCHING if the asset was updated
     std::string check_object(const std::string& path, Cache& cache) {
         if (s3_client == nullptr) {
             TF_DEBUG(S3_DBG).Msg("S3: check_object - abort due to s3_client nullptr\n");
@@ -220,6 +215,9 @@ namespace usd_s3 {
         };
     }
 
+    // Fetch an asset from S3 to the local_path set in the cache object.
+    // Check for the presence of a local cache and only fetch the asset
+    // when it was modified after the cached timestamp.
     bool fetch_object(const std::string& path, Cache& cache) {
         if (s3_client == nullptr) {
             TF_DEBUG(S3_DBG).Msg("S3: fetch_object - abort due to s3_client nullptr\n");
@@ -234,6 +232,8 @@ namespace usd_s3 {
         if (uses_versioning(path)) {
             Aws::String object_versionid = get_object_versionid(path).c_str();
             object_request.WithVersionId(object_versionid);
+            cache.is_pinned = true;
+
             TF_DEBUG(S3_DBG).Msg("S3: fetch_object bucket: %s and object: %s and version: %s\n",
                 bucket_name.c_str(), object_name.c_str(), object_versionid.c_str());
         } else {
@@ -250,6 +250,7 @@ namespace usd_s3 {
                 cache.timestamp = local_date_modified;
                 object_request.WithIfModifiedSince(local_date_modified);
             }
+            // TODO compare cache ETag with MD5 of local copy to know if fetching is required
         }
 
         auto get_object_outcome = s3_client->GetObject(object_request);
@@ -275,13 +276,14 @@ namespace usd_s3 {
             TF_DEBUG(S3_DBG).Msg("S3: fetch_object OK %.0f\n", cache.timestamp);
             //TF_DEBUG(S3_DBG).Msg("S3: fetch_object version: %s\n", get_object_outcome.GetResult().GetVersionId().c_str());
             cache.state = CACHE_FETCHED;
+            cache.ETag = get_object_outcome.GetResult().GetETag();
             return true;
         }
         else
         {
             if (get_object_outcome.GetError().GetResponseCode() == Aws::Http::HttpResponseCode::NOT_MODIFIED) {
                 //cache.timestamp = get_object_outcome.GetResult().GetLastModified().SecondsWithMSPrecision();
-                TF_DEBUG(S3_DBG).Msg("S3: fetch_object OK %.0f\n", cache.timestamp);
+                TF_DEBUG(S3_DBG).Msg("S3: fetch_object OK (not modified)\n");
                 cache.state = CACHE_FETCHED;
                 return true;
             }
@@ -350,11 +352,12 @@ namespace usd_s3 {
         if (cached_result != cached_requests.end()) {
             //
             if (cached_result->second.state == CACHE_NEEDS_FETCHING) {
-
                 return;
             }
-            TF_DEBUG(S3_DBG).Msg("S3: update_asset_info %s\n", path.c_str());
-            check_object(path, cached_result->second);
+            TF_DEBUG(S3_DBG).Msg("S3: update_asset_info %s set to need fetching\n", path.c_str());
+            cached_result->second.state = CACHE_NEEDS_FETCHING;
+            cached_result->second.timestamp = INVALID_TIME;
+            //check_object(path, cached_result->second);
         }
     }
 
