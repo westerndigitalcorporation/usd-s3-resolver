@@ -109,9 +109,9 @@
             "problemMatcher": []
         },
         {
-            "label": "direct fetch from S3 and reload",
+            "label": "direct fetch from S3 - reload",
             "type": "shell",
-            "command": "python -c 'from pxr import Usd, UsdGeom; stage = Usd.Stage.Open(\"s3:hello/kitchen.usdz\"); stage.Reload()'",
+            "command": "rm /tmp/hello -rf; python ../test/test_s3.py ${USD_ASSET_SINGLE}",
             "group": {
                 "kind": "test",
                 "isDefault": true
@@ -119,9 +119,9 @@
             "problemMatcher": []
         },
         {
-            "label": "direct fetch from S3 and reload forced",
+            "label": "referenced fetch from S3 - reload",
             "type": "shell",
-            "command": "python -c 'from pxr import Usd, UsdGeom; stage = Usd.Stage.Open(\"s3:hello/kitchen.usdz\"); stage.Unload(); stage.Reload()'",
+            "command": "rm /tmp/kitchen -rf; python ../test/test_s3.py ${USD_ASSET_MULTI}",
             "group": {
                 "kind": "test",
                 "isDefault": true
@@ -129,10 +129,11 @@
             "problemMatcher": []
         },
         {
-            "label": "direct fetch from S3 and reload after 5s",
+            "label": "direct fetch from S3 and reload after 10s",
             "type": "shell",
-            "command": "python -c 'from pxr import Usd, UsdGeom; stage = Usd.Stage.Open(\"s3:hello/kitchen.usdz\"); import time; time.sleep(10); print \"RELOAD\"; stage.Reload()'",
+            "command": "rm /tmp/hello -rf; python ../test/test_s3.py ${USD_ASSET_SINGLE} 10",
             "group": "test",
+            "problemMatcher": []
         },
         {
             "label": "re-upload kitchen",
@@ -142,9 +143,9 @@
             "problemMatcher": []
         },
         {
-            "label": "direct fetch from S3 and reload forced2",
+            "label": "direct fetch from S3 - upload new - reload stage",
             "type": "shell",
-            "dependsOn": ["re-upload kitchen", "direct fetch from S3 and reload after 5s"],
+            "dependsOn": ["re-upload kitchen", "direct fetch from S3 and reload after 10s"],
             "group": {
                 "kind": "test",
                 "isDefault": true
