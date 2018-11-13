@@ -14,14 +14,12 @@ def main():
     if len(sys.argv) < 2:
         print "Usage: test_s3.py asset.usd"
         sys.exit(0)
-    elif len(sys.argv) == 2:
-        delay = 0
-    else:
-        delay = float(sys.argv[2])
+    usd_file = sys.argv[1]
+    delay = float(sys.argv[2]) if len(sys.argv) > 2 else 0
 
     print "Open stage"
     start = time.time()
-    stage = Usd.Stage.Open(sys.argv[1]) #pylint: disable=no-member
+    stage = Usd.Stage.Open(usd_file) #pylint: disable=no-member
     print "Opened stage in", time.time() - start
 
     time.sleep(delay)
