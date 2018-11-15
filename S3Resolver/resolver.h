@@ -30,7 +30,7 @@ public:
 
     virtual bool IsRelativePath(const std::string& path);
 
-    VtValue GetModificationTimestamp(
+    virtual VtValue GetModificationTimestamp(
         const std::string& path,
         const std::string& resolvedPath) override;
 
@@ -43,6 +43,12 @@ public:
     virtual bool FetchToLocalResolvedPath(
         const std::string& path,
         const std::string& resolvedPath) override;
+
+    virtual void ConfigureResolverForAsset(
+        const std::string& path) override;
+
+    virtual void RefreshContext(
+        const ArResolverContext& context) override;
 
     virtual void BeginCacheScope(
         VtValue* cacheScopeData) override;

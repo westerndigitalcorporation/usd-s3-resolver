@@ -75,16 +75,11 @@ namespace {
         return len - 1;
     }
 
-    // Parse an S3 url and strip off the prefix
+    // Parse an S3 url and strip off the prefix ('s3:', 's3:/' or 's3://')
     // e.g. s3://bucket/object.usd returns bucket/object.usd
     std::string parse_path(const std::string& path) {
         constexpr auto schema_length_short = cexpr_strlen(usd_s3::S3_PREFIX_SHORT);
-        constexpr auto schema_length = cexpr_strlen(usd_s3::S3_PREFIX);
-        if (path.find(usd_s3::S3_PREFIX) == 0) {
-            return path.substr(schema_length);
-        } else {
-            return path.substr(schema_length_short);
-        }
+        return path.substr(path.find_first_not_of("/", schema_length_short));
     }
 
     // Get the bucket from a parsed path
@@ -114,7 +109,7 @@ namespace {
     // e.g. 'bucket/object.usd' returns an empty string
     //      'bucket/object.usd?versionId=abc123' returns abc123
     const std::string get_object_versionid(const std::string& path) {
-        const int i = path.find_first_of("versionId=");
+        const uint i = path.find_first_of("versionId=");
         return (i != std::string::npos) ? path.substr(i + 10) : std::string();
     }
 
@@ -166,10 +161,17 @@ namespace usd_s3 {
 
     // Check / resolve an asset with an S3 HEAD request and store the result in the cache
     // Set CACHE_NEEDS_FETCHING if the asset was updated
+    // Requires the asset to be fetched before --
     std::string check_object(const std::string& path, Cache& cache) {
         if (s3_client == nullptr) {
             TF_DEBUG(S3_DBG).Msg("S3: check_object - abort due to s3_client nullptr\n");
             return std::string();
+        }
+
+        // versioned objects can't change... no need to check them
+        // TODO: move this check?
+        if (cache.is_pinned) {
+            return cache.local_path;
         }
 
         Aws::S3::Model::HeadObjectRequest head_request;
@@ -276,7 +278,7 @@ namespace usd_s3 {
             TF_DEBUG(S3_DBG).Msg("S3: fetch_object OK %.0f\n", cache.timestamp);
             //TF_DEBUG(S3_DBG).Msg("S3: fetch_object version: %s\n", get_object_outcome.GetResult().GetVersionId().c_str());
             cache.state = CACHE_FETCHED;
-            cache.ETag = get_object_outcome.GetResult().GetETag();
+            cache.ETag = get_object_outcome.GetResult().GetETag().c_str();
             return true;
         }
         else
@@ -300,7 +302,8 @@ namespace usd_s3 {
 
         Aws::Client::ClientConfiguration config;
         // TODO: set executor to a PooledThreadExecutor to limit the number of threads
-        config.scheme = Aws::Http::SchemeMapper::FromString("http");
+        config.scheme = Aws::Http::Scheme::HTTP;
+        //config.endpointOverride = get_env_var(PROXY_HOST_ENV_VAR, "") + std::string(":") + get_env_var(PROXY_PORT_ENV_VAR, "80");
         config.proxyHost = get_env_var(PROXY_HOST_ENV_VAR, "").c_str();
         config.proxyPort = atoi(get_env_var(PROXY_PORT_ENV_VAR, "80").c_str());
         config.connectTimeoutMs = 3000;
@@ -321,6 +324,11 @@ namespace usd_s3 {
         TF_DEBUG(S3_DBG).Msg("S3: resolve_name %s\n", path.c_str());
         const auto cached_result = cached_requests.find(path);
         if (cached_result != cached_requests.end()) {
+            if (cached_result->second.state == CACHE_FETCHED) {
+                TF_DEBUG_TIMED_SCOPE(USD_S3_RESOLVER, "RESOLVE %s", path.c_str());
+                TF_DEBUG(S3_DBG).Msg("S3: resolve_name - got cache, need check %s\n", path.c_str());
+                return check_object(path, cached_result->second);
+            }
             if (cached_result->second.state != CACHE_MISSING) {
                 TF_DEBUG(S3_DBG).Msg("S3: resolve_name - use cached result for %s\n", path.c_str());
                 return cached_result->second.local_path;
@@ -344,21 +352,21 @@ namespace usd_s3 {
 
     // Update asset info for resolved assets
     // If the asset needs fetching, nothing is done as the cache is updated during the fetch phase
-    // If the asset doesn't need fetching, use check_object for updates.
-    // Discover local assets
+    // If the asset doesn't need fetching, also do nothing (lol)
     void S3::update_asset_info(const std::string& asset_path) {
-        const auto path = parse_path(asset_path);
-        const auto cached_result = cached_requests.find(path);
-        if (cached_result != cached_requests.end()) {
-            //
-            if (cached_result->second.state == CACHE_NEEDS_FETCHING) {
-                return;
-            }
-            TF_DEBUG(S3_DBG).Msg("S3: update_asset_info %s set to need fetching\n", path.c_str());
-            cached_result->second.state = CACHE_NEEDS_FETCHING;
-            cached_result->second.timestamp = INVALID_TIME;
-            //check_object(path, cached_result->second);
-        }
+        // const auto path = parse_path(asset_path);
+        // const auto cached_result = cached_requests.find(path);
+        // if (cached_result != cached_requests.end()) {
+        //     //
+        //     if (cached_result->second.state == CACHE_NEEDS_FETCHING) {
+        //         return;
+        //     }
+
+        //     TF_DEBUG(S3_DBG).Msg("S3: update_asset_info %s cache state %d\n", path.c_str(), cached_result->second.state);
+        //     //cached_result->second.state = CACHE_NEEDS_FETCHING;
+        //     //cached_result->second.timestamp = INVALID_TIME;
+        //     //check_object(path, cached_result->second);
+        // }
     }
 
     // Fetch an asset to a local path
@@ -409,6 +417,18 @@ namespace usd_s3 {
             return 1.0;
         } else {
             return cached_result->second.timestamp;
+        }
+    }
+
+    // refresh all assets with this prefix
+    void S3::refresh(const std::string& prefix) {
+        if (prefix.empty()) {
+            // refresh all assets
+            cached_requests.clear();
+        } else {
+            // TODO: remove only matching assets
+            // and reload based on S3 list operation with prefix
+            cached_requests.clear();
         }
     }
 

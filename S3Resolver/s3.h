@@ -13,6 +13,7 @@
 
 namespace usd_s3 {
     constexpr const char S3_PREFIX[] = "s3://";
+    constexpr const char S3_PREFIX_SINGLE[] = "s3:/";
     constexpr const char S3_PREFIX_SHORT[] = "s3:";
     constexpr const char S3_SUFFIX[] = ".s3";
     constexpr const char CACHE_PATH_ENV_VAR[] = "USD_S3_CACHE_PATH";
@@ -31,6 +32,7 @@ namespace usd_s3 {
         bool fetch_asset(const std::string& asset_path, const std::string& local_path);
         double get_timestamp(const std::string& asset_path);
 
+        void refresh(const std::string& prefix);
         private:
     };
 }

@@ -89,6 +89,25 @@ std::string S3Resolver::ResolveWithAssetInfo(
     return ArDefaultResolver::ResolveWithAssetInfo(path, nullptr);
 }
 
+void S3Resolver::ConfigureResolverForAsset(
+    const std::string& path)
+{
+    TF_DEBUG(USD_S3_RESOLVER).Msg("S3Resolver CONFIGURE CONTEXT\n");
+    ArDefaultResolver::ConfigureResolverForAsset(path);
+}
+
+// refresh any cashes associated with the given context
+void S3Resolver::RefreshContext(
+    const ArResolverContext& context)
+{
+    TF_DEBUG(USD_S3_RESOLVER).Msg("S3Resolver REFRESH CONTEXT WOPPA\n");
+    // TODO get prefix from context path
+    g_s3.refresh("");
+
+    // This is empty anyway
+    //ArDefaultResolver::RefreshContext(context);
+}
+
 VtValue S3Resolver::GetModificationTimestamp(
     const std::string& path,
     const std::string& resolvedPath)
