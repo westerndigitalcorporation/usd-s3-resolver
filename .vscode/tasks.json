@@ -16,6 +16,7 @@
             // usd path
             "PYTHONPATH": "${workspaceRoot}/../build/lib/python",
             "USDBIN": "${workspaceRoot}/../build/bin",
+            "VENV": "${workspaceRoot}/../venv",
 
             // usd needs to find the S3 resolver plugin
             // set this to the directory containing plugInfo.json
@@ -23,14 +24,14 @@
 
             // a list with interesting debug flags
             "TF_DEBUG_OPTIONS": "AR_RESOLVER_INIT USD_S3_RESOLVER USD_S3_FILEFORMAT SDF_ASSET SDF_LAYER S3_DBG",
-            "TF_DEBUG": "USD_S3_RESOLVER USD_S3_FILEFORMAT ",
+            "TF_DEBUG": "USD_S3_RESOLVER USD_S3_FILEFORMAT S3_DBG",
 
             // configure the S3 resolver to an ActiveScale system node
             "USD_S3_PROXY_HOST": "10.249.66.142",
             "USD_S3_PROXY_PORT": "80",
 
             // a single USD asset you've uploaded to an S3 bucket
-            "USD_ASSET_SINGLE": "s3:hello/kitchen.usdz",
+            "USD_ASSET_SINGLE": "s3://hello/kitchen.usdz",
             "USD_ASSET_SINGLE_LOCAL": "/home/stefaan/usd/kitchen.usdz",
 
             // a local copy of the kitchen set, with all payloads pointing to S3 objects
@@ -111,7 +112,7 @@
         {
             "label": "direct fetch from S3 - reload",
             "type": "shell",
-            "command": "rm /tmp/hello -rf; python ../test/test_s3.py ${USD_ASSET_SINGLE}",
+            "command": "rm /tmp/hello -rf; $VENV/bin/python ../test/test_s3.py ${USD_ASSET_SINGLE}",
             "group": {
                 "kind": "test",
                 "isDefault": true
@@ -121,7 +122,7 @@
         {
             "label": "referenced fetch from S3 - reload",
             "type": "shell",
-            "command": "rm /tmp/kitchen -rf; python ../test/test_s3.py ${USD_ASSET_MULTI}",
+            "command": "rm /tmp/kitchen -rf; $VENV/bin/python ../test/test_s3.py ${USD_ASSET_MULTI}",
             "group": {
                 "kind": "test",
                 "isDefault": true

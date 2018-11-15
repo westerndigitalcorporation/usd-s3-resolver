@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/../build/include"
+                "${workspaceFolder}/../build/include",
+                "/usr/include/python2.7"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
