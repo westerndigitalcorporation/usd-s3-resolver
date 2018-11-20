@@ -19,6 +19,7 @@ namespace usd_s3 {
     constexpr const char CACHE_PATH_ENV_VAR[] = "USD_S3_CACHE_PATH";
     constexpr const char PROXY_HOST_ENV_VAR[] = "USD_S3_PROXY_HOST";
     constexpr const char PROXY_PORT_ENV_VAR[] = "USD_S3_PROXY_PORT";
+    constexpr const char ENDPOINT_ENV_VAR[] = "USD_S3_ENDPOINT";
 
     class S3 {
     public:

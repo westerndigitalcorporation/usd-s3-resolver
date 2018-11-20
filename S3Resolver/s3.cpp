@@ -303,12 +303,23 @@ namespace usd_s3 {
         Aws::Client::ClientConfiguration config;
         // TODO: set executor to a PooledThreadExecutor to limit the number of threads
         config.scheme = Aws::Http::Scheme::HTTP;
-        //config.endpointOverride = get_env_var(PROXY_HOST_ENV_VAR, "") + std::string(":") + get_env_var(PROXY_PORT_ENV_VAR, "80");
-        config.proxyHost = get_env_var(PROXY_HOST_ENV_VAR, "").c_str();
-        config.proxyPort = atoi(get_env_var(PROXY_PORT_ENV_VAR, "80").c_str());
+
+        // set a custom endpoint e.g. an ActiveScale system node or minio server
+        if (!get_env_var(ENDPOINT_ENV_VAR, "").empty()) {
+            config.endpointOverride = (get_env_var(ENDPOINT_ENV_VAR, "")).c_str();
+        }
+        if (!get_env_var(PROXY_HOST_ENV_VAR, "").empty()) {
+            config.proxyHost = get_env_var(PROXY_HOST_ENV_VAR, "").c_str();
+            config.proxyPort = atoi(get_env_var(PROXY_PORT_ENV_VAR, "80").c_str());
+        }
+
         config.connectTimeoutMs = 3000;
         config.requestTimeoutMs = 3000;
-        s3_client = Aws::New<Aws::S3::S3Client>("s3resolver", config);
+
+        // create a client with useVirtualAddressing=false to use path style addressing
+        // see https://github.com/aws/aws-sdk-cpp/issues/587
+        s3_client = Aws::New<Aws::S3::S3Client>("s3resolver", config, Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never, false);
+
     }
 
     S3::~S3() {

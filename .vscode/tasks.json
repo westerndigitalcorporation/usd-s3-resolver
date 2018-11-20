@@ -27,8 +27,12 @@
             "TF_DEBUG": "USD_S3_RESOLVER USD_S3_FILEFORMAT S3_DBG",
 
             // configure the S3 resolver to an ActiveScale system node
-            "USD_S3_PROXY_HOST": "10.249.66.142",
-            "USD_S3_PROXY_PORT": "80",
+            //"USD_S3_PROXY_HOST": "10.249.66.142",
+            //"USD_S3_PROXY_PORT": "80",
+
+            // or a minio server
+            "USD_S3_ENDPOINT": "10.108.36.207:9000",
+            "AWS_PROFILE": "minio2",
 
             // a single USD asset you've uploaded to an S3 bucket
             "USD_ASSET_SINGLE": "s3://hello/kitchen.usdz",

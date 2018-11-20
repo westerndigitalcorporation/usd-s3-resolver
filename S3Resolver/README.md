@@ -6,10 +6,11 @@ Currently the URI Resolver provides support for an alternative protocol, when re
 
 #### Request URL
 
-S3 protocol can be accessed by using s3:<bucket_name>/<object_name> when referencing assets in a USD file.
+S3 protocol can be accessed by using `s3://<bucket_name>/<object_name>` as the asset path when referencing in USD or in the USD tools. Shorter notation `s3:` is also supported.
 
 ```
 usdcat s3:hello/world.usdz
+usdview s3://hello/world.usdz
 ```
 
 #### Environment variables supported by the resolver
@@ -18,6 +19,7 @@ The S3 resolver supports the following environment variables.
 
 - USD_S3_PROXY_HOST - Proxy host for S3 access, should point to an ActiveScale system node.
 - USD_S3_PROXY_PORT - Proxy port for S3 access, defaults to port 80 for the HTTP scheme.
+- USD_S3_ENDPOINT - Endpoint URL (without scheme), e.g. 192.168.0.100:9000. Use this to connect to a Minio server.
 - USD_S3_CACHE_PATH - Name of the local cache path to save usd files. Default value is /tmp.
 
 Create the S3 credentials in `~/.aws/credentials` with
@@ -27,7 +29,7 @@ aws configure
 
 You can make use of AWS cli profiles. More info [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html).
 ```
-export AWS_PROFILE=user2
+export AWS_PROFILE=system2
 ```
 
 #### Payload conversion
